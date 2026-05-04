@@ -8,7 +8,7 @@ SECRET_KEY = 'django-insecure-replace-this-in-production'
 DEBUG = False
 
 ALLOWED_HOSTS = [
-    "rfq-99w5.onrender.com",
+    "rfq-1-p2kd.onrender.com",
     "127.0.0.1",
     "localhost"
 ]
