@@ -311,32 +311,32 @@ def process_rfq_file(uploaded_file):
     ]
     columns = None
 
-    xls = pd.ExcelFile(input_buffer, engine='openpyxl')
-    sheets_lower = [s.lower() for s in sheets]
-    sheet_map = {sheet.lower(): sheet for sheet in xls.sheet_names if sheet.lower() in sheets_lower}
-    missing_sheets = [s for s in sheets if s.lower() not in sheet_map]
+    file_name = getattr(uploaded_file, 'name', '')
+    if file_name:
+        if file_name.lower().endswith(('.xlsx', '.xlsm', '.xltx', '.xltm')):
+            engine = 'openpyxl'
+        elif file_name.lower().endswith('.xlsb'):
+            engine = 'pyxlsb'
+        else:
+            raise ValueError('Please upload a valid Excel file (.xlsx, .xlsm, .xltx, .xltm, .xlsb).')
+    else:
+        engine = 'openpyxl'  # default
+
+    xls = pd.ExcelFile(input_buffer, engine=engine)
+    missing_sheets = [sheet for sheet in sheets if sheet not in xls.sheet_names]
     if missing_sheets:
         raise ValueError(f'Missing expected sheet(s): {", ".join(missing_sheets)}')
 
-    workbook = Workbook(write_only=True)
-    worksheet = workbook.create_sheet(title='Cleaned RFQ')
-    header_written = False
-
-    file_name = getattr(uploaded_file, 'name', '')
-    if file_name and not file_name.lower().endswith(('.xlsx', '.xlsm', '.xltx', '.xltm')):
-        raise ValueError('Please upload a valid Excel file (.xlsx, .xlsm, .xltx, .xltm).')
-
     for i, sheet in enumerate(sheets):
-        actual_sheet = sheet_map[sheet.lower()]
         if i == 0:
-            df = xls.parse(sheet_name=actual_sheet, header=7)
+            df = xls.parse(sheet_name=sheet, header=7)
             columns = [str(c) if c is not None else '' for c in df.columns]
             for required_col in REQUIRED_COLUMNS:
                 if required_col not in columns:
                     columns.append(required_col)
                     df[required_col] = ''
         else:
-            df = xls.parse(sheet_name=actual_sheet, header=None, skiprows=8)
+            df = xls.parse(sheet_name=sheet, header=None, skiprows=8)
             if df.shape[1] < len(columns):
                 for c in range(df.shape[1], len(columns)):
                     df[c] = None
